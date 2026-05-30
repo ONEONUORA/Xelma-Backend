@@ -504,6 +504,41 @@ npm run build
 npm start
 ```
 
+### Render Parity Local Profile
+
+To reproduce the runtime behavior of the Render deployment on your machine,
+use the `start:render-parity` script. This sets `NODE_ENV=production`
+before launching the built server so the same code paths Render hits
+fire locally — CORS is strict (`CLIENT_URL` must be set, no wildcard
+origin), error responses match production, and logging runs at
+production verbosity.
+
+```bash
+# 1) Build first (start:render-parity expects dist/)
+npm run build
+
+# 2) Run with production-shaped environment
+CLIENT_URL=http://localhost:5173 \
+JWT_SECRET="$(openssl rand -base64 32)" \
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/xelma_local" \
+npm run start:render-parity
+```
+
+Required env vars for parity (matches what Render's environment supplies):
+
+| Variable | Why it matters in render-parity mode |
+|---|---|
+| `NODE_ENV=production` | Set by the script. Enables strict CORS and production logging. |
+| `CLIENT_URL` | **Required.** Strict CORS will reject all origins if unset. |
+| `ALLOWED_ORIGINS` | Optional comma-separated extra origins. |
+| `JWT_SECRET` | Required for startup. Use a cryptographically strong value. |
+| `DATABASE_URL` | Required. Point at a local Postgres. |
+| `SOROBAN_CONTRACT_ID` / `SOROBAN_ADMIN_SECRET` / `SOROBAN_ORACLE_SECRET` | Optional; only needed if you want on-chain calls. |
+
+If you hit a CORS error from your frontend in this mode, hit
+`GET /api/admin/cors-diagnostics?origin=<your-origin>` with an admin
+token to see exactly which origins this process accepts.
+
 ### Verify Server is Running
 
 ```bash

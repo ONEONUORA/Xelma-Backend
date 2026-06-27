@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { mockData } from '../data/mockData';
+import config from '../config';
 import logger from '../utils/logger';
 
 const COINGECKO_URL =
@@ -21,6 +23,19 @@ interface CacheEntry {
 }
 
 let cache: CacheEntry | null = null;
+
+function getMockPrices(): PriceResponse {
+  const btc = mockData.prices.find((p) => p.symbol === 'btc')?.price ?? 60_000;
+  const eth = mockData.prices.find((p) => p.symbol === 'eth')?.price ?? 3_000;
+
+  return {
+    BTC: btc,
+    ETH: eth,
+    XLM: 0.2891,
+    stale: false,
+    lastUpdatedAt: new Date().toISOString(),
+  };
+}
 
 function mapCoinGeckoResponse(data: Record<string, { usd?: number }>): PriceResponse {
   const btc = data.bitcoin?.usd;
@@ -58,6 +73,10 @@ export function resetPriceCache(): void {
 }
 
 export const getPrices = async (): Promise<PriceResponse> => {
+  if (config.app.dataMode === 'mock') {
+    return getMockPrices();
+  }
+
   const now = Date.now();
 
   if (cache && now - cache.fetchedAt < CACHE_TTL_MS) {
